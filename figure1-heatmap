@@ -1,0 +1,67 @@
+setwd("/Users/huangmiao/Desktop")
+exp <- read.csv("count_gene.csv", header = T, row.names = 1)
+difgene <- read.delim("difgene.txt", header = T, row.names = 2)
+merged_df <- merge(exp,difgene , by = "row.names", all.y = TRUE) 
+
+# 将第一行作为行名
+row.names(merged_df) <- merged_df[,1]
+
+# 移除第一行
+merged_df <- merged_df[,-1]
+
+merged_df <- merged_df[, -ncol(merged_df)] #移除掉最后一列
+
+data <- merged_df
+
+data <- as.matrix(data)
+
+samples <- rep(c('YNT', 'ONT',"YT","OT"), c(18,20,18,20)) #定义样本分组信息  #按照上面抬头的顺序进行分类
+for (i in 1:nrow(data)) 
+  data[i, ] <- scale(log(unlist(data[i, ] + 1), 2))#标准化处理
+Group = factor(rep(c('YNT', 'ONT',"YT","OT"),times = c(18,20,18,20)))#分组信息，用于热图分割
+
+
+Group = factor(Group,levels = c('YNT', 'ONT',"YT","OT"))
+
+library(ComplexHeatmap)
+top_annotation = HeatmapAnnotation(cluster = anno_block(gp = gpar(fill = c("#FEE6CE","#C6DBEF","#FD8D3C","#2171B5")),
+                                                        labels = c('YNT', 'ONT',"YT","OT"),
+                                                        labels_gp = gpar(col = "black", fontsize = 12)))
+
+
+
+
+#选择合适数量展示的基因
+genes=c("JUND","IFNGR1","IL1R2","TRBV12-4","TNFRSF1B",
+        "TNFSF14","HLA-DOB","BATF2","CCL8","FOSL2",
+        "TRAV8-2","IRF7",
+        "FGFBP2","IFNG","IGHJ3",
+        
+        
+        "EPCAM","AFP","CCNE1","IGFBPL1","CDH24",
+        "MKI67","VEGFB","ICAM5","CDH6","VCAN",
+        "IGF2","GDF15","FGF9","FGF1",
+        "KRT19"
+)
+
+index=which(rownames(data) %in% genes)
+labs=rownames(data)[index]
+lab2=rowAnnotation(foo=anno_mark(at=index,
+                                 labels=labs,
+                                 labels_gp = gpar(fontsize = 5),
+                                 lines_gp = gpar()
+                                 ))
+
+library(Cairo)
+Heatmap( data,#表达矩阵
+         col = colorRampPalette(c("#2fa1dd", "white", "red"))(100),#颜色定义
+         show_row_names = F,#不展示行名
+         top_annotation = top_annotation,#顶部分组信息
+         right_annotation = lab2,
+         column_split = Group,#用group信息将热图分开，以group聚类
+         column_title = NULL,#不显示列标题
+         show_column_names = F,
+         cluster_columns = F, 
+         show_row_dend = FALSE,#隐藏行的聚类树
+         use_raster=T)
+
