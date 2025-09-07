@@ -211,3 +211,121 @@ grid::grid.draw(p$TGFB1)
 
 
 
+addArchRThreads(threads = 15)
+library(BSgenome.Hsapiens.UCSC.hg38)
+tcell <- addGroupCoverages(ArchRProj = tcell, groupBy = "celltype",force = TRUE)
+
+pathToMacs2 <-"/home/ccell/miniconda3/envs/macs/bin/macs2"
+tcell <- addReproduciblePeakSet(
+  ArchRProj = tcell, 
+  groupBy = "celltype",pathToMacs2 = pathToMacs2,force = TRUE
+)
+
+getPeakSet(tcell)
+tcell <- addPeakMatrix(tcell)
+getAvailableMatrices(tcell)
+
+table(tcell$celltype)
+markersPeaks <- getMarkerFeatures(
+  ArchRProj = tcell, 
+  useMatrix = "PeakMatrix", 
+  groupBy = "celltype",
+  bias = c("TSSEnrichment", "log10(nFrags)"),
+  testMethod = "wilcoxon"
+)
+
+markerTest <- getMarkerFeatures(
+  ArchRProj = tcell, 
+  useMatrix = "PeakMatrix",
+  groupBy = "celltype",
+  testMethod = "wilcoxon",
+  bias = c("TSSEnrichment", "log10(nFrags)")
+)
+
+tcell <- addMotifAnnotations(ArchRProj = tcell, motifSet = "cisbp", name = "Motif",force=TRUE)
+
+motifsUp <- peakAnnoEnrichment(
+  seMarker = markerTest,
+  ArchRProj = tcell,
+  peakAnnotation = "Motif",
+  cutOff = "FDR <= 0.05 & Log2FC >= 0.5"
+)
+motifsUp
+
+df <- data.frame(TF = rownames(motifsUp), mlog10Padj = assay(motifsUp)[,1])
+
+assay(motifsUp)
+
+df <- data.frame(TF = rownames(motifsUp), mlog10Padj = assay(motifsUp)[,1])
+df <- df[order(df$mlog10Padj, decreasing = TRUE),]
+df$rank <- seq_len(nrow(df))
+
+df <- read.delim(file = "/home/ccell/ggup-tcell.txt", header = TRUE, row.names = 1)
+df <- df[rownames(df) != "103", , drop = FALSE]
+
+
+df <- df[1:100, c("rank","TF", "mlog10Padj"), drop = FALSE] 
+
+ggUp <- ggplot(df, aes(rank, mlog10Padj, color = mlog10Padj)) + 
+  geom_point(size = 1) +
+  ggrepel::geom_label_repel(
+    data = df[rev(seq_len(5)), ], aes(x = rank, y = mlog10Padj, label = TF), 
+    size = 1.5,
+    nudge_x = 2,
+    color = "black"
+  ) + theme_ArchR() + 
+  ylab("-log10(P-adj) Motif Enrichment") + 
+  xlab("Rank Sorted TFs Enriched") +
+  scale_color_gradientn(colors = paletteContinuous(set = "comet"))
+
+ggUp
+
+
+
+data <- as.matrix(data)
+
+samples <- rep(c("g1","g2","g3","g4"), c(2,2,2,2)) 
+for (i in 1:nrow(data)) 
+  data[i, ] <- scale(log(unlist(data[i, ] + 1), 2))
+Group = factor(rep(c("g1","g2","g3","g4"),times = c(2,2,2,2)))
+
+Group = factor(Group,levels = c("g1","g2","g3","g4"))
+
+library(ComplexHeatmap)
+top_annotation = HeatmapAnnotation(cluster = anno_block(gp = gpar(fill = c("#009933", "#FF3333","orange","blue")),
+                                                        labels = c("g1","g2","g3","g4"),
+                                                        labels_gp = gpar(col = "black", fontsize = 12)))
+
+
+genes <- c("ITGAE", "IL2RA", "HAVCR2", "TIGIT", "LAYN", "TOX",
+           
+           "TOX2", "GNLY", "IFNG",  "TBX21", "GZMA",
+           
+           "CD74", "SIK3", "SMYD3", "ZBTB20", "ARL15", "ASH1L",
+           
+           "TGFB1"
+)
+
+
+index=which(rownames(data) %in% genes)
+labs=rownames(data)[index]
+lab2=rowAnnotation(foo=anno_mark(at=index,
+                                 labels=labs,
+                                 labels_gp = gpar(fontsize = 5),
+                                 lines_gp = gpar()
+))
+
+library(Cairo)
+Heatmap( data,
+         col = colorRampPalette(c("#2fa1dd", "white", "red"))(100),
+         show_row_names = F,
+         top_annotation = top_annotation,
+         right_annotation = lab2,
+         column_split = Group,
+         column_title = NULL,
+         show_column_names = T,
+         cluster_columns = F, cluster_rows = FALSE,
+         show_row_dend = FALSE,
+         use_raster=F,
+         border = 'black',
+         rect_gp = gpar(col = "black", lwd = 1))
