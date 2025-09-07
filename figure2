@@ -65,8 +65,151 @@ DotPlot(tcell, features=list_genes, cols = c('grey', "firebrick"))+
   )+labs(x="", y="")
 
 
+cg_sce=cpot
+Idents(cg_sce)=cg_sce$celltype
+cg_sce$celltype=Idents(cg_sce)
+table(Idents(cg_sce))
+table(cg_sce$celltype)
+table(cg_sce$age)
+
+
+meta_data <- cg_sce@meta.data %>% 
+  rownames_to_column("Cell") %>% 
+  select(Cell,celltype)  
+write.table(meta_data, 'cg_sce_meta.txt', sep='\t', quote=F, row.names=F)
+
+
+cg_sce@assays$RNA@data[1:4,1:4]
+write.table(as.matrix(cg_sce@assays$RNA@data), 'cg_sce_count.txt', sep='\t', quote=F)
+
+conda install -c conda-forge rpy2
+pip install CellPhoneDB==3.0.0
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple CellPhoneDB==3.0.0 
+cellphonedb database download
+
+cellphonedb method statistical_analysis cg_sce_meta.txt cg_sce_count.txt --counts-data=gene_name --threads=10
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple markupsafe==2.0.1
+conda install r-base=4.2.1
+conda install r-ggplot2
+conda install r-pheatmap 
+
+cellphonedb plot dot_plot 
+cellphonedb plot heatmap_plot cg_sce_meta.txt
+
+count_net <- read.delim("out/count_network.txt", check.names = FALSE)
+inter_net <- read.delim("out/interaction_count.txt", check.names = FALSE)
+pvalues <- read.delim("out/pvalues.txt", check.names = FALSE)
+means <- read.delim("out/means.txt", check.names = FALSE)
+sig.means <- read.delim("out/significant_means.txt", check.names = FALSE)
+deconvoluted <- read.delim("out/deconvoluted.txt", check.names = FALSE)
 
 
 
+library(CellChat)
+count_inter <- count_net
+count_inter$count <- count_inter$count/100
+library(tidyr)
+count_inter<-spread(count_inter, TARGET, count)
+rownames(count_inter) <- count_inter$SOURCE
+count_inter <- count_inter[, -1]
+count_inter <- as.matrix(count_inter)
+netVisual_circle(count_inter,weight.scale = T)
+
+for (i in 1:nrow(count_inter)) {
+  mat2 <- matrix(0, nrow = nrow(count_inter), ncol = ncol(count_inter), dimnames = dimnames(count_inter))
+  mat2[i, ] <- count_inter[i, ]
+  
+  netVisual_circle(mat2, 
+                   weight.scale = TRUE, 
+                   edge.weight.max = max(count_inter), 
+                   title.name = rownames(count_inter)[i],
+                   arrow.size = 0.2)
+}
+
+dev.off()
+
+library(tidyr)
+count_matrix<-spread(count_net, TARGET, count)
+rownames(count_matrix) <- count_matrix$SOURCE
+count_matrix <- count_matrix[, -1]
+count_matrix <- as.matrix(count_matrix)
+library(pheatmap)
+
+pheatmap(count_matrix, show_rownames = T, show_colnames = T, scale="none", cluster_cols = T,
+         border_color='white', cluster_rows = T, 
+         treeheight_row = 0,treeheight_col = 0,main = "Control",
+         color = colorRampPalette(c("dodgerblue4",'peachpuff','deeppink4' ))( 1000 ),
+        
+         display_numbers = T, number_color="white",fontsize_number=12,
+         number_format="%.0f")    
+
+
+BiocManager::install("TCGAbiolinks")
+BiocManager::install("DESeq2")
+devtools::install_github("ayueme/easyTCGA")
+library(easyTCGA)
+
+getmrnaexpr("TCGA-LIHC")   
+
+load("/output_mRNA_lncRNA_expr/TCGA-LIHC_mrna_expr_tpm.rdata")
+
+exp <- log2(mrna_expr_tpm + 1)
+
+View(exp)
+geneset2 <- split(geneset$marker,geneset$celltype)
+View(geneset2)
+
+res <- gsva(
+  as.matrix(exp), 
+  geneset2, 
+  method = "ssgsea", 
+  kcdf = "Gaussian",
+  mx.diff = F,
+  verbose   = F 
+)
+
+resm <- res
+for (i in colnames(res)) {
+  resm[,i] <- (res[,i] -min(res[,i]))/(max(res[,i] )-min(res[,i] ))
+}
+
+
+View(res)
+
+library(survival)
+library(survminer)
+
+res1=t(data.frame(res))
+rownames(res1) <- gsub("\\.", "-", rownames(res1)) 
+
+clinicalSE=read.csv(file="output_mRNA_lncRNA_expr/TCGA-LIHC_clinicalSE.csv",
+                    head=T,row.names=1)
+
+clin_info=clinicalSE
+
+meta <- merge( res1, clin_info, by = 0)
+
+#meta$gene = meta$Treg
+meta$gene = meta$inhibitory
+meta=subset(meta,sample_type %in% c("Primary Tumor"))
+
+meta = meta[meta$vital_status %in% c('Alive','Dead'),] 
+
+meta$days_to_last_follow_up[is.na(meta$days_to_last_follow_up)] = 0 
+meta$days_to_death[is.na(meta$days_to_death)] = 0   
+meta$days <- ifelse(meta$vital_status=='Alive',meta$days_to_last_follow_up,meta$days_to_death)
+meta$days <- as.numeric(unlist(meta$days))
+meta$month=round(meta$days/30,0)
+
+meta <- meta %>% 
+  mutate(vital_status = recode(vital_status, "Alive" = 0, "Dead" = 1))
+
+res.cut <- surv_cutpoint(meta, 
+                         time = "month", 
+                         event = "vital_status", 
+                         variables = c("gene") 
+)
+
+summary(res.cut) 
 
   
