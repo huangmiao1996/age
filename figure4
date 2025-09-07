@@ -1,3 +1,4 @@
+#pseudotime analysis
 library(slingshot) 
 library(Seurat)
 library(devtools)
@@ -36,7 +37,7 @@ sce_slingshot2 <- slingshot(sce,
 SlingshotDataSet(sce_slingshot2) 
 
 
-
+#pseudotime analysis
 sudo apt-get install libgdal-dev
 sudo apt install libudunits2-dev
 
@@ -133,7 +134,7 @@ plot_cells(mycds2, label_cell_groups = F,
 
 
 
-
+#pseudotime analysis
 BiocManager::install("sva") 
 
 devtools::install_local("CytcellRACE_0.3.3.tar.gz") 
@@ -159,7 +160,7 @@ plotCytoGenes(results, numOfGenes = 30, outputDir = './')
 plotCytcellRACE(results, phenotype = phenot,emb = emb,gene = "SIK3",outputDir = "./")
 
 
-
+#accessibility in scATAC-seq
 addArchRThreads(threads = 10)
 tcell <- addGroupCoverages(ArchRProj = tcell, groupBy = "celltype",force=TRUE) #48分钟
 
@@ -210,7 +211,7 @@ grid::grid.draw(p$TGFB1)
 
 
 
-
+#motif analysis
 addArchRThreads(threads = 15)
 library(BSgenome.Hsapiens.UCSC.hg38)
 tcell <- addGroupCoverages(ArchRProj = tcell, groupBy = "celltype",force = TRUE)
@@ -281,7 +282,7 @@ ggUp <- ggplot(df, aes(rank, mlog10Padj, color = mlog10Padj)) +
 ggUp
 
 
-
+#bulk rna-seq heatmap
 data <- as.matrix(data)
 
 samples <- rep(c("g1","g2","g3","g4"), c(2,2,2,2)) 
