@@ -1,3 +1,4 @@
+#heatmap
 exp <- read.csv("count_gene.csv", header = T, row.names = 1)
 difgene <- read.delim("difgene.txt", header = T, row.names = 2)
 merged_df <- merge(exp,difgene , by = "row.names", all.y = TRUE) 
@@ -46,7 +47,7 @@ Heatmap( data,
          use_raster=T)
 
 
-
+#GO analysis
 Enrichment_KEGGgo_analusis <- function(genes,
                                        species=c('human','mouse')){
   library(org.Hs.eg.db) 
