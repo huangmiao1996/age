@@ -1,3 +1,4 @@
+#Seurat object
 library(Matrix)
 library(Seurat)
 library(tidyverse)
@@ -65,6 +66,7 @@ DotPlot(tcell, features=list_genes, cols = c('grey', "firebrick"))+
   )+labs(x="", y="")
 
 
+#cellphonedb
 cg_sce=cpot
 Idents(cg_sce)=cg_sce$celltype
 cg_sce$celltype=Idents(cg_sce)
@@ -144,6 +146,7 @@ pheatmap(count_matrix, show_rownames = T, show_colnames = T, scale="none", clust
          number_format="%.0f")    
 
 
+#TCGA analysis
 BiocManager::install("TCGAbiolinks")
 BiocManager::install("DESeq2")
 devtools::install_github("ayueme/easyTCGA")
