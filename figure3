@@ -1,0 +1,27 @@
+exmarker=list(c("PDCD1", "CTLA4", "HAVCR2", "LAYN", "LAG3"
+                 ))
+                 
+cd8$ex_Score=NULL
+cd8$celltype=NULL
+cd8$celltype=Idents(cd8)
+cd8 <- AddModuleScore(cd8, features = exmarker, name = c("exmarker"))
+
+colnames(cd8@meta.data)
+colnames(cd8@meta.data)[22] <- 'ex_Score'
+library(ggpubr)
+library(ggsignif)
+mymeta=cd8@meta.data
+ggplot(mymeta,aes(x=celltype,y=ex_Score,fill=celltype))+
+  geom_boxplot()+theme_test()+
+  theme(axis.text.x.bottom = element_text(angle =0,vjust = 1,hjust = 0.5)) + 
+  labs(x = '')+
+  scale_fill_manual(values=c("CD8_TCF7"="#7FFFAA",
+                             "CD8_MKI67"='#58A4C3',
+                             "CD8_GNLY"='#BD956A',
+                             "CD8_GZMK"="#9EB0FFFF",
+                             "CD8_NR4A1"="#E31A1CFF",
+                             "CD8_PDCD1"='#E59CC4',
+                             "CD8_SIK3"='#C5DEBA',"Treg_FOXP3"='#57C3F3',"Treg_MKI67"='#C1E6F3',
+                             "Treg_SIK3"="#a1d5b9")
+                    ) 
+
