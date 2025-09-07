@@ -1,0 +1,103 @@
+#young and elderly accessibility
+addArchRThreads(threads = 10)
+tcell_young <- addGroupCoverages(ArchRProj = tcell_young, groupBy = "celltype",force=TRUE) 
+
+pathToMacs2 <-"/home/ccell/miniconda3/envs/macs/bin/macs2"
+tcell_young <- addReproduciblePeakSet(
+  ArchRProj = tcell_young, 
+  groupBy = "age",pathToMacs2 = pathToMacs2,force=TRUE
+)
+getPeakSet(tcell_young)
+
+
+tcell_young <- addPeakMatrix(tcell_young)
+getAvailableMatrices(tcell_young)
+
+tcell_young <- addPeak2GeneLinks(
+  ArchRProj = tcell_young,
+  reducedDims = "IterativeLSI"
+
+
+p2g <- getPeak2GeneLinks(
+  ArchRProj = tcell_young,
+  corCutOff = 0.45,
+  resolution = 1,
+  returnLoops = T
+)
+
+metadata(p2g)
+p2g[[1]]
+
+
+
+markerGenes  <- c(
+  "TGFB1"
+)
+
+p <- plotBrowserTrack(
+  ArchRProj = tcell_young, 
+  groupBy = "celltype", 
+  geneSymbol = markerGenes, 
+  upstream = 50000,
+  downstream = 50000,
+  loops = getPeak2GeneLinks(tcell_young)
+)
+
+grid::grid.newpage()
+grid::grid.draw(p$TGFB1)
+
+
+
+
+
+addArchRThreads(threads = 10)
+tcell_elderly <- addGroupCoverages(ArchRProj = tcell_elderly, groupBy = "celltype",force=TRUE) 
+
+pathToMacs2 <-"/home/ccell/miniconda3/envs/macs/bin/macs2"
+tcell_elderly <- addReproduciblePeakSet(
+  ArchRProj = tcell_elderly, 
+  groupBy = "age",pathToMacs2 = pathToMacs2,force=TRUE
+)
+getPeakSet(tcell_elderly)
+
+
+tcell_elderly <- addPeakMatrix(tcell_elderly)
+getAvailableMatrices(tcell_elderly)
+
+tcell_elderly <- addPeak2GeneLinks(
+  ArchRProj = tcell_elderly,
+  reducedDims = "IterativeLSI"
+
+
+p2g <- getPeak2GeneLinks(
+  ArchRProj = tcell_elderly,
+  corCutOff = 0.45,
+  resolution = 1,
+  returnLoops = T
+)
+
+metadata(p2g)
+p2g[[1]]
+
+
+
+markerGenes  <- c(
+  "TGFB1"
+)
+
+p <- plotBrowserTrack(
+  ArchRProj = tcell_elderly, 
+  groupBy = "celltype", 
+  geneSymbol = markerGenes, 
+  upstream = 50000,
+  downstream = 50000,
+  loops = getPeak2GeneLinks(tcell_elderly)
+)
+
+grid::grid.newpage()
+grid::grid.draw(p$TGFB1)
+
+
+
+
+
