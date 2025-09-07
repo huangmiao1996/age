@@ -1,16 +1,14 @@
-# age
+# Theme
 HCC and age
 
-## Description
-This repository contains custom scripts used in the analysis and visualization of data for the above manuscript.
+# Description
+The codes include the scRNA-seq and scATAC-seq analysis code.
 
-## Files
-- `figure1-heatmap.R`: Data preprocessing and statistical testing
+# Requirements
+Python 3.8+, R 4.3+
+Packages: Seurat, ArchR, ggplot2, etc.
 
+# Contact
+Any question please contact him1996@163.com (Huang Miao)
 
-## Requirements
-- Python 3.8+, R 4.3+
-- Packages: numpy, pandas, ggplot2, etc.
-
-## Usage
-Run `figure1-heatmap.R` in RStudio to reproduce results.
+Copyright (C) 2025 Zhou Lab
