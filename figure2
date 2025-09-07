@@ -1,0 +1,72 @@
+library(Matrix)
+library(Seurat)
+library(tidyverse)
+library(patchwork)     
+dir <- paste0("BGI/",dir)
+sample_name <- c()
+scRNAlist <- list()
+for(i in 1:length(dir)){
+  counts <- Read10X(data.dir = dir[i],gene.column=1)
+  scRNAlist[[i]] <- CreateSeuratObject(counts, project=sample_name[i], min.cells=3, min.features = 200)
+}  
+scRNA[["percent.mt"]]<-PercentageFeatureSet(scRNA,pattern="^MT-")
+scRNA[["percent.hb"]]<-PercentageFeatureSet(scRNA,pattern="^HB[^(P)]")
+VlnPlot(scRNA, features = c("nFeature_RNA"),group.by="orig.ident")+NoLegend()
+VlnPlot(scRNA, features = c( "nCount_RNA"),group.by="orig.ident")+NoLegend()
+plot1 <- FeatureScatter(scRNA, feature1 = "nCount_RNA", feature2 = "percent.mt")+NoLegend()
+plot2 <- FeatureScatter(scRNA, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")+NoLegend()
+plot1 + plot2
+scRNA <- subset(scRNA, subset = nFeature_RNA > 500 & nFeature_RNA < 6000 & percent.mt < 50 )
+scRNA <- NormalizeData(scRNA) %>% FindVariableFeatures() %>% ScaleData() %>% RunPCA(verbose=FALSE)
+library(harmony)
+scRNA <- RunHarmony(scRNA, group.by.vars = "orig.ident") 
+scRNA <- RunUMAP(scRNA, reduction = "harmony", dims = 1:50)
+scRNA <- FindNeighbors(scRNA, reduction = "harmony", dims = 1:50) %>% FindClusters(resolution=0.3)
+seq <- seq(0.1, 1, by = 0.1)
+scRNA <- lapply(seq, function(res) {
+  FindClusters(scRNA, resolution = res)
+})
+DimPlot(scRNA, reduction = "umap", raster=FALSE,label=F)
+
+
+list_genes=list(subpopulation=c("CD4","CD8A","TRDC"),
+                general=c("TCF7","CCR7","SELL","IL7R","ANXA1","LTB",
+                          
+                          "IFIT3","IFI44L","IFI6",
+                          "CXCL13","TNFSF8","IL6ST",
+                          "STMN1","TYMS","MKI67",
+                          "FOXP3","RTKN2",
+                          "CTLA4","TIGIT","TNFRSF9","HAVCR2","PDCD1",
+                          
+                          "SIK3","SMYD3","ZBTB20","ARL15","ASH1L","TGFB1",
+                          
+                          
+                          "NR4A1","NR4A2","ZNF331",
+                           "GZMK","NKG7",
+                          "SLC4A10","KLRB1",
+                          "GNLY","FGFBP2",
+                          
+                          "CMC1","AREG","KLRD1"
+                )
+)
+
+
+DotPlot(tcell, features=list_genes, cols = c('grey', "firebrick"))+
+  RotatedAxis()+theme(
+   
+    panel.border = element_rect(color="black"), 
+    panel.spacing = unit(1, "mm"), 
+   
+   
+    strip.text = element_text(margin=margin(b=3, unit="mm")),
+    strip.placement = 'outlet', 
+   
+    axis.line = element_blank(),
+  )+labs(x="", y="")
+
+
+
+
+
+
+  
