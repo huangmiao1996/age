@@ -1,0 +1,213 @@
+library(slingshot) 
+library(Seurat)
+library(devtools)
+library(Seurat)
+library(cowplot)
+library(ggplot2)
+library(Matrix)
+library(dplyr)
+library(tradeSeq)
+library(RColorBrewer)
+
+cd8$celltype=NULL
+cd8$celltype=Idents(cd8)
+
+table(cd8$celltype)
+sce <- as.SingleCellExperiment(cd8, assay = "RNA")
+sce_slingshot1 <- slingshot(sce, 
+                            reducedDim = 'UMAP', 
+                            clusterLabels = sce$celltype, 
+                            #start.clus = 'PMN(0)', 
+                            approx_points = 150)
+
+expdata <- as.matrix(GetAssayData(object = cd8, slot = "data"))
+sce <- SingleCellExperiment(assays = List(counts = expdata))
+reduction_sce <- Embeddings(object = cd8, reduction = "umap")
+reducedDims(sce) <- SimpleList(UMAP = reduction_sce)
+colData(sce)$celltype <- cd8@meta.data$celltype
+colData(sce)$orig.ident <- cd8@meta.data$orig.ident 
+
+sce_slingshot2 <- slingshot(sce, 
+                            clusterLabels = 'celltype', 
+                            reducedDim = 'UMAP', 
+                            start.clus = 'CD8_TCF7', 
+                            end.clus=c("CD8_PDCD1"),
+                            approx_points = 150)
+SlingshotDataSet(sce_slingshot2) 
+
+
+
+sudo apt-get install libgdal-dev
+sudo apt install libudunits2-dev
+
+BiocManager::install(c('BiocGenerics', 'DelayedArray', 'DelayedMatrixStats',
+                       'limma', 'lme4', 'S4Vectors', 'SingleCellExperiment',
+                       'SummarizedExperiment', 'batchelor', 'Matrix.utils',
+                       'HDF5Array', 'terra', 'ggrastr'))
+
+remotes::install_github("rspatial/terra") 
+install.packages("devtools")
+devtools::install_github('cole-trapnell-lab/monocle3')
+library(monocle3)
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+
+expression_matrix <- as(as.matrix(cd8@assays$RNA@counts), 'sparseMatrix')
+table(Idents(cd8))
+cd8$celltype=Idents(cd8)
+cell_metadata <- cd8@meta.data
+gene_annotation <- data.frame(gene_short_name = rownames(expression_matrix))
+rownames(gene_annotation) <- rownames(expression_matrix)
+
+cds <- new_cell_data_set(expression_matrix,
+                         cell_metadata = cell_metadata,
+                         gene_metadata = gene_annotation)
+
+cds <- preprocess_cds(cds, num_dim = 100)#method默认为PCA
+plot_pc_variance_explained(cds)#展示PC数，和seurat降维一摸一样
+
+cds <- reduce_dimension(cds,reduction_method='UMAP',
+                        preprocess_method = 'PCA')
+plot_cells(cds, color_cells_by="celltype",cell_size=0.5,group_label_size=5)
+plot_cells(cds, genes=c("PDCD1", "CTLA4", "SIK3", "SMYD3"))
+
+cds<-cluster_cells(cds, resolution =0.00005)  
+plot_cells(cds,cell_size=0.5,group_label_size=5)
+cds.embed <- cds@int_colData$reducedDims$UMAP
+int.embed <- Embeddings(cd8, reduction = "umap")
+int.embed <- int.embed[rownames(cds.embed),]
+cds@int_colData$reducedDims$UMAP <- int.embed 
+
+plot_cells(cds, color_cells_by="celltype",
+           cell_size=0.5,group_label_size=4) 
+
+mycds <- cds
+mycds <- learn_graph(mycds,
+                     verbose=T,
+                     learn_graph_control=list(minimal_branch_len=10,
+                                             
+                                              euclidean_distance_ratio=0
+                                              
+                     ))
+
+
+
+plot_cells(mycds, 
+           color_cells_by = 'celltype',
+           label_groups_by_cluster=FALSE,
+           label_leaves=FALSE,
+           label_branch_points=FALSE,
+           cell_size=0.5,group_label_size=4)
+
+
+plot_cells(mycds, 
+           color_cells_by = "celltype", 
+           label_groups_by_cluster=FALSE,
+           label_leaves=TRUE, 
+           label_branch_points=TRUE,
+           graph_label_size=4)
+
+
+
+mycds1 <- mycds
+mycds1 <- order_cells(mycds1)
+plot_cells(mycds1, label_cell_groups = F,
+           color_cells_by = "pseudotime", 
+           label_leaves = F, 
+           label_branch_points = F, 
+           graph_label_size = 1, 
+           cell_size=0.15,  
+           trajectory_graph_segment_size = 2)
+
+mycds2 <- mycds
+mycds2 <- order_cells(mycds2)
+
+plot_cells(mycds2, label_cell_groups = F,
+           color_cells_by = "pseudotime", 
+           label_leaves = F, 
+           label_branch_points = F, 
+           graph_label_size = 1, 
+           cell_size=0.15,  
+           trajectory_graph_segment_size = 2)
+
+
+
+
+BiocManager::install("sva") 
+
+devtools::install_local("CytcellRACE_0.3.3.tar.gz") 
+
+sudo apt-get install libnetcdf-dev
+install.packages('ncdf4') 
+library(CytcellRACE)
+install.packages("reticulate")
+library(reticulate)
+exp1 <- as.matrix(cd8@assays$RNA@counts)
+exp1 <- exp1[apply(exp1 > 0,1,sum) >= 5,]
+results <- CytcellRACE(exp1,ncores = 20) 
+
+cd8$celltype=NULL
+cd8$celltype=Idents(cd8)
+phenot <- cd8$celltype
+phenot <- as.character(phenot)
+names(phenot) <- rownames(cd8@meta.data)
+emb <- cd8@reductions[["umap"]]@cell.embeddings
+
+plotCytcellRACE(results, phenotype = phenot, emb = emb, outputDir = './')
+plotCytoGenes(results, numOfGenes = 30, outputDir = './')
+plotCytcellRACE(results, phenotype = phenot,emb = emb,gene = "SIK3",outputDir = "./")
+
+
+
+addArchRThreads(threads = 10)
+tcell <- addGroupCoverages(ArchRProj = tcell, groupBy = "celltype",force=TRUE) #48分钟
+
+pathToMacs2 <-"/home/ccell/miniconda3/envs/macs/bin/macs2"
+tcell <- addReproduciblePeakSet(
+  ArchRProj = tcell, 
+  groupBy = "celltype",pathToMacs2 = pathToMacs2,force=TRUE
+)
+getPeakSet(tcell)
+
+
+tcell <- addPeakMatrix(tcell)
+getAvailableMatrices(tcell)
+
+
+tcell <- addPeak2GeneLinks(
+  ArchRProj = tcell,
+  reducedDims = "IterativeLSI"
+)
+
+p2g <- getPeak2GeneLinks(
+  ArchRProj = tcell,
+  corCutOff = 0.45,
+  resolution = 1,
+  returnLoops = T
+)
+
+metadata(p2g)
+p2g[[1]]
+
+
+
+markerGenes  <- c(
+  "TGFB1"
+)
+
+p <- plotBrowserTrack(
+  ArchRProj = tcell, 
+  groupBy = "celltype", 
+  geneSymbol = markerGenes, 
+  upstream = 50000,
+  downstream = 50000,
+  loops = getPeak2GeneLinks(tcell)
+)
+
+grid::grid.newpage()
+grid::grid.draw(p$TGFB1)
+
+
+
+
