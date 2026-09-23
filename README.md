@@ -44,6 +44,7 @@ Typical install time: approximately 30–60 minutes on a normal desktop computer
 
 # Instructions for use
 Scripts are organized by analysis module: scRNA-seq analysis (Seurat, harmony, DoubletFinder, inferCNV), scATAC-seq analysis (ArchR, MACS2), trajectory inference (CytoTRACE, Slingshot, Monocle3, PAGA), cell-cell communication (CellPhoneDB), and survival analysis (survival, survminer, cmprsk).
+The main analyses can be reproduced using the scripts in this repository together with the processed data matrices described in the manuscript.
 
 # Contact
 Any question please contact him1996@163.com (Huang Miao)
